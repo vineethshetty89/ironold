@@ -6,6 +6,8 @@ import json
 
 TOKEN = "7802077777:AAEJQSKHimGgnjrKT6ImjgB1dsus6JX618g"
 
+leaderboard = {}
+
 async def start(update: Update, context):
     await update.message.reply_text("Welcome to the AI Fitness Challenge!")
 
@@ -41,7 +43,27 @@ def generate_pushup_feedback(score):
 # Example Usage
 
 
+async def show_leaderboard(update: Update, context):
+    """Displays the top users on the leaderboard."""
+    if not leaderboard:
+        await update.message.reply_text("🏆 No scores yet! Upload a workout video to get started.")
+        return
+
+    # Sort leaderboard by score
+    sorted_leaderboard = sorted(leaderboard.items(), key=lambda x: x[1]['score'], reverse=True)
+
+    message = "🏆 *Push-Up Challenge Leaderboard* 🏆\n\n"
+    for i, (user_id, data) in enumerate(sorted_leaderboard, 1):
+        message += f"{i}. {data['name']} - {data['score']} points ({data['videos']} videos)\n"
+
+    await update.message.reply_text(message)
+
+
 async def handle_video(update: Update, context: CallbackContext):
+
+    user_id = update.message.from_user.id
+    user_name = update.message.from_user.first_name
+
     video_file = update.message.video.file_id
     video = await context.bot.get_file(video_file)
     await video.download_to_drive("workout.mp4")
@@ -50,6 +72,15 @@ async def handle_video(update: Update, context: CallbackContext):
     angles_list = analyze_pushup("workout.mp4")
     reps_wise_angles = detect_pushup_reps(angles_list)
     score = score_pushup(reps_wise_angles)
+
+    if user_id not in leaderboard:
+        leaderboard[user_id] = {
+            "name": user_name,
+            "score": score
+        }
+    else:
+        leaderboard[user_id]["score"] = score
+
     if score < 75:
         await update.message.reply_text(f"Your push-up form score: {score:.2f}/100 💪. Curating improvement tips...")
         feedback = generate_pushup_feedback(score)
@@ -58,6 +89,7 @@ async def handle_video(update: Update, context: CallbackContext):
         await update.message.reply_text(f"Your push-up form score: {score:.2f}/100 💪. You are doing great! Keep it up!")
 
 app.add_handler(MessageHandler(filters.VIDEO, handle_video))
+app.add_handler(CommandHandler("leaderboard", show_leaderboard))
 
 print("Bot is running...")
 app.run_polling()
