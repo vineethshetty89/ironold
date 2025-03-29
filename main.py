@@ -54,7 +54,7 @@ async def show_leaderboard(update: Update, context):
 
     message = "🏆 *Push-Up Challenge Leaderboard* 🏆\n\n"
     for i, (user_id, data) in enumerate(sorted_leaderboard, 1):
-        message += f"{i}. {data['name']} - {data['score']} points ({data['videos']} videos)\n"
+        message += f"{i}. {data['name']} - {data['score']} points \n"
 
     await update.message.reply_text(message)
 
